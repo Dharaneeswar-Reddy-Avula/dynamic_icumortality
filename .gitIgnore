@@ -1,0 +1,7 @@
+./model_day1.pkl
+./model_day2.pkl
+./features.pkl
+
+./__pycache__/
+.env
+.env*
