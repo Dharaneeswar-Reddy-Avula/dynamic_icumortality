@@ -1,0 +1,6 @@
+/* Empty or basic reset since index.css handles tailwind and theme variables */
+#root {
+  width: 100%;
+  margin: 0 auto;
+  min-height: 100vh;
+}

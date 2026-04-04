@@ -47,17 +47,17 @@ with st.sidebar:
     env_api_key = os.environ.get("GEMINI_API_KEY", "")
     gemini_key = st.text_input("Gemini API Key", value=env_api_key, type="password")
 
-# High-risk defaults for demonstration
+# Low-risk defaults for demonstration
 DEFAULT_CLINICAL_VALUES = {
-    'hr': 125.0, 'spo2': 88.0, 'bun': 50.0, 'creatinine': 3.5,
-    'lactate': 6.2, 'wbc': 22.0, 'rr': 34.0, 'sodium': 128.0,
-    'potassium': 6.2, 'glucose': 280.0, 'temp': 39.8, 'ast': 180.0,
-    'alt': 180.0, 'ph': 7.15, 'pco2': 65.0, 'po2': 55.0,
-    'sbp': 82.0, 'dbp': 48.0, 'mbp': 52.0, 'calcium': 6.8,
-    'magnesium': 1.1, 'chloride': 118.0, 'bicarbonate': 14.0,
-    'albumin': 1.8, 'ptt': 70.0, 'inr': 2.8, 'pt': 22.0, 
-    'bilirubin': 4.5, 'platelets': 75.0, 'hematocrit': 24.0, 
-    'hemoglobin': 7.8
+    'hr': 75.0, 'spo2': 98.0, 'bun': 15.0, 'creatinine': 0.9,
+    'lactate': 1.0, 'wbc': 7.5, 'rr': 16.0, 'sodium': 140.0,
+    'potassium': 4.0, 'glucose': 100.0, 'temp': 37.0, 'ast': 25.0,
+    'alt': 25.0, 'ph': 7.4, 'pco2': 40.0, 'po2': 95.0,
+    'sbp': 120.0, 'dbp': 80.0, 'mbp': 93.0, 'calcium': 9.5,
+    'magnesium': 2.0, 'chloride': 100.0, 'bicarbonate': 24.0,
+    'albumin': 4.0, 'ptt': 30.0, 'inr': 1.0, 'pt': 12.0, 
+    'bilirubin': 0.8, 'platelets': 250.0, 'hematocrit': 42.0, 
+    'hemoglobin': 14.0
 }
 
 def get_default_val(feature):
