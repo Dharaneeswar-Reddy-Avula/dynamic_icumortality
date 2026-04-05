@@ -74,40 +74,86 @@ def predict(data: dict):
     # Prepare input
     df = prepare_input(data)
 
-    # Select model and explainer
-    if model_type == "lightgbm":
-        if stay_day == 1:
-            model = model_day1
-            explainer = explainer_day1
+    # Model mapping based on user directory
+    MODEL_MAP = {
+        "lightgbm": {
+            1: "model_day1.pkl",
+            2: "model_day2.pkl"
+        },
+        "xgboost": {
+            1: "day1_xg_model.pkl",
+            2: "day2_xg_model.pkl"
+        },
+        "randomforest": {
+            1: "model_rf_day1.pkl",
+            2: "model_rf_day2.pkl"
+        },
+        "elasticnet": {
+            1: "model_en_day1.pkl",
+            2: "model_en_day2.pkl"
+        }
+    }
+
+    if model_type not in MODEL_MAP:
+        raise HTTPException(status_code=400, detail=f"Unsupported model type: {model_type}")
+
+    model_filename = MODEL_MAP[model_type].get(stay_day)
+    
+    try:
+        # For performance, only load if not already globally loaded (lightgbm is pre-loaded)
+        if model_type == "lightgbm":
+            if stay_day == 1:
+                model, explainer = model_day1, explainer_day1
+            else:
+                model, explainer = model_day2, explainer_day2
         else:
-            model = model_day2
-            explainer = explainer_day2
-    else:
-        # Dynamic loading for newly requested models (xgboost, randomforest, elasticnet)
-        model_filename = f"model_{model_type}_day{stay_day}.pkl"
-        try:
+            # Dynamic loading for other models
             with open(model_filename, "rb") as f:
                 model = pickle.load(f)
-            explainer = shap.TreeExplainer(model)
-        except FileNotFoundError:
-            raise HTTPException(
-                status_code=404, 
-                detail=f"The {model_type} model file for Day {stay_day} was not found. Please place '{model_filename}' in the backend directory."
-            )
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            # Use TreeExplainer for XGBoost/RandomForest, or generic Explainer for others
+            if "xg" in model_type or "random" in model_type:
+                explainer = shap.TreeExplainer(model)
+            else:
+                explainer = shap.Explainer(model, df) # Generic for linear models like ElasticNet
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"The {model_type} model file for Day {stay_day} was not found. Please ensure '{model_filename}' is in the backend directory."
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error loading {model_type} model: {str(e)}")
 
     # Prediction
     try:
+        # AUTOMATIC REORDERING: Ensure features match the model's expected order
+        model_features = []
+        if hasattr(model, 'feature_names_in_'):
+            model_features = list(model.feature_names_in_)
+        elif hasattr(model, 'get_booster'):
+            model_features = model.get_booster().feature_names
+        
+        if model_features:
+            # Reorder DataFrame columns to match model's training order
+            df = df[model_features]
+            
         risk = model.predict_proba(df)[0][1]
-    except AttributeError:
-        # Fallback if the user uploaded a model without `predict_proba`
-        risk = float(model.predict(df)[0])
+    except Exception as e:
+        # Fallback for models without predict_proba or other common inference issues
+        try:
+            risk = float(model.predict(df)[0])
+        except Exception as inner_e:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Prediction error for {model_type}: {str(e)}. Fallback failed: {str(inner_e)}"
+            )
         
     risk_level = get_risk_level(risk)
     
-    # Explain Prediction
-    explanation = get_explanation(model, explainer, df, FEATURES, risk_level, gemini_key=gemini_key)
+    # Explain Prediction (Wrap in try-except to prevent whole response failure if AI fails)
+    try:
+        explanation = get_explanation(model, explainer, df, model_features if model_features else FEATURES, risk_level, gemini_key=gemini_key)
+    except Exception as e:
+        explanation = f"AI Explanation generation failed but risk was calculated: {str(e)}"
 
     # Generate SHAP Plot Image
     shap_base64 = ""

@@ -225,10 +225,10 @@ export default function Predict() {
                     onChange={e => setModelType(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="lightgbm">LightGBM (Default)</option>
-                    <option value="xgboost">XGBoost</option>
-                    <option value="randomforest">Random Forest</option>
-                    <option value="elasticnet">Elastic Net</option>
+                    <option value="lightgbm">LightGBM Accuracy (Default)</option>
+                    <option value="xgboost">XGBoost Sequential</option>
+                    <option value="randomforest">Random Forest Ensemble</option>
+                    <option value="elasticnet">Elastic Net Linear</option>
                   </select>
                 </div>
                 <div className="space-y-1.5 flex flex-col justify-center">

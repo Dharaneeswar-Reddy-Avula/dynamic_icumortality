@@ -78,43 +78,39 @@ export default function Performance() {
               transition={{ duration: 0.2 }}
             >
               <div className="grid md:grid-cols-2 gap-8">
-                {/* ROC Curve Placeholder */}
+                {/* ROC Curve */}
                 <Card className="shadow-sm border-slate-200 overflow-hidden">
                   <CardHeader className="bg-white border-b">
                     <CardTitle className="text-lg">Receiver Operating Characteristic (ROC)</CardTitle>
                     <CardDescription>
-                      Upload target: <code>src/assets/performance/{activeModel}_day{activeDay}_roc.png</code>
+                      Performance visualization for {models.find(m => m.id === activeModel)?.name} (Day {activeDay}).
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-0 bg-slate-100/50 flex flex-col items-center justify-center min-h-[300px]">
-                    {/* 
-                      TODO: Replace this placeholder div below with an actual img tag once you drop the file in:
-                      <img src={`/assets/performance/${activeModel}_day${activeDay}_roc.png`} alt="ROC Curve" className="w-full h-full object-cover" />
-                    */}
-                    <ImageIcon className="w-12 h-12 text-slate-300 mb-2" />
-                    <p className="text-slate-400 font-medium px-8 text-center">
-                      Replace code block with your {models.find(m => m.id === activeModel)?.name} (Day {activeDay}) ROC image.
-                    </p>
+                  <CardContent className="p-0 bg-white flex flex-col items-center justify-center min-h-[300px]">
+                    <PerformanceImage 
+                      src={`/assets/performance/${activeModel}_day${activeDay}_roc.jpeg`} 
+                      alt="ROC Curve" 
+                      placeholderIcon={ImageIcon}
+                      placeholderText={`ROC visualization for ${models.find(m => m.id === activeModel)?.name} is currently unavailable for this prediction day.`}
+                    />
                   </CardContent>
                 </Card>
 
-                {/* PR Curve / Accuracy Screenshot Placeholder */}
+                {/* PR Curve / Accuracy Screenshot */}
                 <Card className="shadow-sm border-slate-200 overflow-hidden">
                   <CardHeader className="bg-white border-b">
                     <CardTitle className="text-lg">Precision-Recall & Accuracy Metrics</CardTitle>
                     <CardDescription>
-                      Upload target: <code>src/assets/performance/{activeModel}_day{activeDay}_metrics.png</code>
+                      Detailed validation metrics for {models.find(m => m.id === activeModel)?.name} (Day {activeDay}).
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-0 bg-slate-100/50 flex flex-col items-center justify-center min-h-[300px]">
-                    {/* 
-                      TODO: Replace this placeholder div below with an actual img tag once you drop the file in:
-                      <img src={`/assets/performance/${activeModel}_day${activeDay}_metrics.png`} alt="Metrics" className="w-full h-full object-cover" />
-                    */}
-                    <Activity className="w-12 h-12 text-slate-300 mb-2" />
-                    <p className="text-slate-400 font-medium px-8 text-center">
-                      Replace code block with your {models.find(m => m.id === activeModel)?.name} (Day {activeDay}) Accuracy screenshot.
-                    </p>
+                  <CardContent className="p-0 bg-white flex flex-col items-center justify-center min-h-[300px]">
+                    <PerformanceImage 
+                      src={`/assets/performance/${activeModel}_day${activeDay}_metrics.jpeg`} 
+                      alt="Accuracy Metrics" 
+                      placeholderIcon={Activity}
+                      placeholderText={`Detailed accuracy metrics for ${models.find(m => m.id === activeModel)?.name} will be added soon.`}
+                    />
                   </CardContent>
                 </Card>
               </div>
@@ -123,5 +119,36 @@ export default function Performance() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+// Helper component for dynamic performance images with error handling
+function PerformanceImage({ src, alt, placeholderIcon: Icon, placeholderText }) {
+  const [error, setError] = useState(false);
+
+  // Reset error state when the source image changes
+  useState(() => {
+    if (error) setError(false);
+  }, [src]);
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 bg-slate-100/50 min-h-[350px] w-full text-center">
+        <Icon className="w-12 h-12 text-slate-300 mb-2" />
+        <p className="text-slate-400 font-medium px-8 text-sm max-w-[280px]">{placeholderText}</p>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      className="w-full h-auto object-contain max-h-[500px]"
+      alt={alt}
+      onError={() => {
+        console.log(`Failed to load performance image: ${src}`);
+        setError(true);
+      }}
+    />
   );
 }
