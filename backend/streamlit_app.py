@@ -16,9 +16,9 @@ st.set_page_config(page_title="ICU Mortality Predictor", layout="wide")
 # Load models and features
 @st.cache_resource
 def load_assets():
-    with open("model_day1.pkl", "rb") as f:
+    with open("models/lgbm/model_day1_lgbm.pkl", "rb") as f:
         model_day1 = pickle.load(f)
-    with open("model_day2.pkl", "rb") as f:
+    with open("models/lgbm/model_day2_lgbm.pkl", "rb") as f:
         model_day2 = pickle.load(f)
     with open("features.pkl", "rb") as f:
         FEATURES = pickle.load(f)

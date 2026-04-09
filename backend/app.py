@@ -24,10 +24,10 @@ app.add_middleware(
 # =========================
 # LOAD MODELS & EXPLAINERS
 # =========================
-with open("model_day1.pkl", "rb") as f:
+with open("models/lgbm/model_day1_lgbm.pkl", "rb") as f:
     model_day1 = pickle.load(f)
 
-with open("model_day2.pkl", "rb") as f:
+with open("models/lgbm/model_day2_lgbm.pkl", "rb") as f:
     model_day2 = pickle.load(f)
 
 with open("features.pkl", "rb") as f:
@@ -77,20 +77,20 @@ def predict(data: dict):
     # Model mapping based on user directory
     MODEL_MAP = {
         "lightgbm": {
-            1: "model_day1.pkl",
-            2: "model_day2.pkl"
+            1: "models/lgbm/model_day1_lgbm.pkl",
+            2: "models/lgbm/model_day2_lgbm.pkl"
         },
         "xgboost": {
-            1: "day1_xg_model.pkl",
-            2: "day2_xg_model.pkl"
+            1: "models/xgb/day1_xg_model.pkl",
+            2: "models/xgb/day2_xg_model.pkl"
         },
         "randomforest": {
-            1: "model_rf_day1.pkl",
-            2: "model_rf_day2.pkl"
+            1: "models/random_forest/model_rf_day1.pkl",
+            2: "models/random_forest/model_rf_day2.pkl"
         },
         "elasticnet": {
-            1: "model_en_day1.pkl",
-            2: "model_en_day2.pkl"
+            1: "models/logisticRegression/Elasticnetmodel_day1.pkl",
+            2: "models/logisticRegression/Elasticnetmodel_day2.pkl"
         }
     }
 
