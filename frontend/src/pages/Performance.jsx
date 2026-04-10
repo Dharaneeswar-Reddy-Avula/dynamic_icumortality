@@ -14,6 +14,20 @@ export default function Performance() {
     { id: "elasticnet", name: "Elastic Net" },
   ];
 
+  const getRocSrc = (model, day) => {
+    if (model === 'lightgbm') return '/assets/lgbm_performance/roc.jpeg';
+    if (model === 'randomforest') return `/assets/rf/day${day}auroc.jpeg`;
+    if (model === 'elasticnet') return `/assets/elastic net/elasticnet_day${day}_roc.jpeg`;
+    return `/assets/performance/${model}_day${day}_roc.jpeg`;
+  };
+
+  const getMetricsSrc = (model, day) => {
+    if (model === 'lightgbm') return '/assets/lgbm_performance/calibration curve.jpeg';
+    if (model === 'randomforest') return `/assets/rf/day${day}metric${day === 2 ? 's' : ''}.jpeg`;
+    if (model === 'elasticnet') return `/assets/elastic net/elasticnet_day${day}_metrics.jpeg`;
+    return `/assets/performance/${model}_day${day}_metrics.jpeg`;
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
       <motion.div
@@ -88,7 +102,7 @@ export default function Performance() {
                   </CardHeader>
                   <CardContent className="p-0 bg-white flex flex-col items-center justify-center min-h-[300px]">
                     <PerformanceImage 
-                      src={`/assets/performance/${activeModel}_day${activeDay}_roc.jpeg`} 
+                      src={getRocSrc(activeModel, activeDay)}
                       alt="ROC Curve" 
                       placeholderIcon={ImageIcon}
                       placeholderText={`ROC visualization for ${models.find(m => m.id === activeModel)?.name} is currently unavailable for this prediction day.`}
@@ -96,23 +110,77 @@ export default function Performance() {
                   </CardContent>
                 </Card>
 
-                {/* PR Curve / Accuracy Screenshot */}
+                {/* Secondary Curve / Accuracy Screenshot */}
                 <Card className="shadow-sm border-slate-200 overflow-hidden">
                   <CardHeader className="bg-white border-b">
-                    <CardTitle className="text-lg">Precision-Recall & Accuracy Metrics</CardTitle>
+                    <CardTitle className="text-lg">
+                      {activeModel === 'lightgbm' ? 'Calibration Curve' : 'Precision-Recall & Accuracy Metrics'}
+                    </CardTitle>
                     <CardDescription>
-                      Detailed validation metrics for {models.find(m => m.id === activeModel)?.name} (Day {activeDay}).
+                      Detailed evaluation metrics for {models.find(m => m.id === activeModel)?.name} {activeModel === 'lightgbm' ? '' : `(Day ${activeDay})`}.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-0 bg-white flex flex-col items-center justify-center min-h-[300px]">
                     <PerformanceImage 
-                      src={`/assets/performance/${activeModel}_day${activeDay}_metrics.jpeg`} 
-                      alt="Accuracy Metrics" 
+                      src={getMetricsSrc(activeModel, activeDay)} 
+                      alt={activeModel === 'lightgbm' ? 'Calibration Curve' : 'Accuracy Metrics'} 
                       placeholderIcon={Activity}
                       placeholderText={`Detailed accuracy metrics for ${models.find(m => m.id === activeModel)?.name} will be added soon.`}
                     />
                   </CardContent>
                 </Card>
+
+                {activeModel === 'lightgbm' && (
+                  <>
+                    {/* Internal vs External Validation */}
+                    <Card className="shadow-sm border-slate-200 overflow-hidden">
+                      <CardHeader className="bg-white border-b">
+                        <CardTitle className="text-lg">Internal vs External Validation</CardTitle>
+                        <CardDescription>
+                          Baseline performance comparison across cohorts.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-0 bg-white flex flex-col items-center justify-center min-h-[300px]">
+                        <PerformanceImage 
+                          src="/assets/lgbm_performance/baseline.jpeg" 
+                          alt="Baseline Validation" 
+                          placeholderIcon={ImageIcon}
+                          placeholderText="Internal vs External validation image is unavailable."
+                        />
+                        <PerformanceImage 
+                          src="/assets/lgbm_performance/internal.jpeg" 
+                          alt="Baseline Validation" 
+                          placeholderIcon={ImageIcon}
+                          placeholderText="Internal vs External validation image is unavailable."
+                        />
+                         <PerformanceImage 
+                          src="/assets/lgbm_performance/externalvalidation.jpeg" 
+                          alt="external Validation" 
+                          placeholderIcon={ImageIcon}
+                          placeholderText="Internal vs External validation image is unavailable."
+                        />
+                      </CardContent>
+                    </Card>
+
+                    {/* Training vs Validation Metrics */}
+                    <Card className="shadow-sm border-slate-200 overflow-hidden">
+                      <CardHeader className="bg-white border-b">
+                        <CardTitle className="text-lg">Training vs Validation Metrics</CardTitle>
+                        <CardDescription>
+                          Learning curves and external dataset validation scoring.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-0 bg-white flex flex-col items-center justify-center min-h-[300px]">
+                        <PerformanceImage 
+                          src="/assets/lgbm_performance/training_validation.jpeg" 
+                          alt="Training vs Validation" 
+                          placeholderIcon={Activity}
+                          placeholderText="Training vs Validation metrics image is unavailable."
+                        />
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
               </div>
             </motion.div>
           </AnimatePresence>

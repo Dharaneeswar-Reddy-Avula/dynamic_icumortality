@@ -1,7 +1,7 @@
-
-./__pycache__/
 .env
 .env*
+__pycache__/
+*.py[cod]
 
 ./model_day1.pkl
 ./model_day2.pkl
