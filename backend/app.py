@@ -49,15 +49,17 @@ def get_risk_level(pred):
         return "LOW"
 
 
-def prepare_input(data: dict):
+def prepare_input(data: dict, features_list: list = None):
+    if features_list is None:
+        features_list = FEATURES
     df = pd.DataFrame([data])
 
     # Ensure all features exist
-    for col in FEATURES:
+    for col in features_list:
         if col not in df:
             df[col] = 0
 
-    df = df[FEATURES]
+    df = df[features_list]
     return df
 
 
@@ -71,14 +73,24 @@ def predict(data: dict):
     model_type = data.get("model_type", "lightgbm").lower()
     gemini_key = data.get("gemini_key", None)
 
+    if model_type == "eicu_to_mimic_lightgbm":
+        with open("features_eicu_to_mimic.pkl", "rb") as f:
+            features_list = pickle.load(f)
+    else:
+        features_list = FEATURES
+
     # Prepare input
-    df = prepare_input(data)
+    df = prepare_input(data, features_list)
 
     # Model mapping based on user directory
     MODEL_MAP = {
         "lightgbm": {
             1: "models/lgbm/model_day1_lgbm.pkl",
             2: "models/lgbm/model_day2_lgbm.pkl"
+        },
+        "eicu_to_mimic_lightgbm": {
+            1: "models/lgbm/model_day1_eicu_to_mimic_lgbm.pkl",
+            2: "models/lgbm/model_day2_eicu_to_mimic-lgbm.pkl"
         },
         "xgboost": {
             1: "models/xgb/day1_xg_model.pkl",
@@ -100,6 +112,7 @@ def predict(data: dict):
     model_filename = MODEL_MAP[model_type].get(stay_day)
     
     try:
+        scaler = None
         # For performance, only load if not already globally loaded (lightgbm is pre-loaded)
         if model_type == "lightgbm":
             if stay_day == 1:
@@ -108,13 +121,26 @@ def predict(data: dict):
                 model, explainer = model_day2, explainer_day2
         else:
             # Dynamic loading for other models
-            with open(model_filename, "rb") as f:
-                model = pickle.load(f)
-            # Use TreeExplainer for XGBoost/RandomForest, or generic Explainer for others
-            if "xg" in model_type or "random" in model_type:
+            try:
+                with open(model_filename, "rb") as f:
+                    loaded = pickle.load(f)
+            except Exception:
+                import joblib
+                loaded = joblib.load(model_filename)
+            
+            # Extract nested model and scaler if wrapped in a dict
+            if isinstance(loaded, dict):
+                model = loaded.get("model", loaded)
+                scaler = loaded.get("scaler", None)
+            else:
+                model = loaded
+                scaler = None
+                
+            # Use TreeExplainer for XGBoost/RandomForest/LightGBM, or generic Explainer for others
+            if "xg" in model_type or "random" in model_type or "lgbm" in model_type or "lightgbm" in model_type:
                 explainer = shap.TreeExplainer(model)
             else:
-                explainer = shap.Explainer(model, df) # Generic for linear models like ElasticNet
+                explainer = None # Will initialize after df filtering and scaling
     except FileNotFoundError:
         raise HTTPException(
             status_code=404, 
@@ -127,20 +153,35 @@ def predict(data: dict):
     try:
         # AUTOMATIC REORDERING: Ensure features match the model's expected order
         model_features = []
-        if hasattr(model, 'feature_names_in_'):
+        if 'loaded' in locals() and isinstance(loaded, dict) and 'features' in loaded:
+            model_features = loaded['features']
+        elif hasattr(model, 'feature_names_in_'):
             model_features = list(model.feature_names_in_)
         elif hasattr(model, 'get_booster'):
             model_features = model.get_booster().feature_names
         
         if model_features:
+            # Ensure all required features are present
+            for col in model_features:
+                if col not in df:
+                    df[col] = 0
             # Reorder DataFrame columns to match model's training order
             df = df[model_features]
             
-        risk = model.predict_proba(df)[0][1]
+        if 'scaler' in locals() and scaler:
+            input_df = pd.DataFrame(scaler.transform(df), columns=df.columns)
+        else:
+            input_df = df
+            
+        # Initialize explainer for linear models here now that input_df is correctly scaled and shaped
+        if explainer is None:
+            explainer = shap.Explainer(model, input_df)
+            
+        risk = model.predict_proba(input_df)[0][1]
     except Exception as e:
         # Fallback for models without predict_proba or other common inference issues
         try:
-            risk = float(model.predict(df)[0])
+            risk = float(model.predict(input_df)[0])
         except Exception as inner_e:
             raise HTTPException(
                 status_code=500, 
@@ -151,7 +192,7 @@ def predict(data: dict):
     
     # Explain Prediction (Wrap in try-except to prevent whole response failure if AI fails)
     try:
-        explanation = get_explanation(model, explainer, df, model_features if model_features else FEATURES, risk_level, gemini_key=gemini_key)
+        explanation = get_explanation(model, explainer, df, model_features if model_features else features_list, risk_level, gemini_key=gemini_key)
     except Exception as e:
         explanation = f"AI Explanation generation failed but risk was calculated: {str(e)}"
 

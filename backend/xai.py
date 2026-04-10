@@ -76,8 +76,14 @@ def generate_explanation(model, explainer, df, features, idx=0):
         shap_values = shap_values.values
         if len(shap_values.shape) == 3: 
              shap_values = shap_values[:, :, 1]
+    elif isinstance(shap_values, np.ndarray) and len(shap_values.shape) == 3:
+        shap_values = shap_values[:, :, 1]
     
     shap_vals = shap_values[0]
+    
+    # Ensure it's 1-dimensional (Fallback failsafe)
+    if len(shap_vals.shape) > 1:
+        shap_vals = shap_vals[:, 1] if shap_vals.shape[1] > 1 else shap_vals.flatten()
     
     explanation = pd.DataFrame({
         'feature': features,
@@ -148,6 +154,10 @@ def generate_clinical_narrative(explanation_df, pred, features_list, risk_level)
     narrative = "\n🧠 Clinical Explanation:\n\n"
     narrative += f"Overall Risk Level: {risk_level}\n\n"
     
+    # Determine dynamic threshold to account for different shap value scales (log-odds vs probability)
+    max_shap = explanation_df['shap'].abs().max() if not explanation_df.empty else 0.05
+    threshold = max(0.01, max_shap * 0.1)
+
     # 🔴 Increasing risk
     narrative += "🔴 **Primary Factors Increasing Risk:**\n"
     
@@ -155,7 +165,7 @@ def generate_clinical_narrative(explanation_df, pred, features_list, risk_level)
     for _, row in explanation_df.iterrows():
         if row['shap'] <= 0:
             continue
-        if abs(row['shap']) < 0.08:
+        if abs(row['shap']) < threshold:
             continue
         
         feature = row['feature']
@@ -191,7 +201,7 @@ def generate_clinical_narrative(explanation_df, pred, features_list, risk_level)
     for _, row in explanation_df[::-1].iterrows():
         if row['shap'] >= 0:
             continue
-        if abs(row['shap']) < 0.08:
+        if abs(row['shap']) < threshold:
             continue
         
         feature = row['feature']

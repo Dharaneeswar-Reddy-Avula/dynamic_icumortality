@@ -226,6 +226,7 @@ export default function Predict() {
                     className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="lightgbm">LightGBM Accuracy (Default)</option>
+                    <option value="eicu_to_mimic_lightgbm">eICU to MIMIC LightGBM</option>
                     <option value="xgboost">XGBoost Sequential</option>
                     <option value="randomforest">Random Forest Ensemble</option>
                     <option value="elasticnet">Elastic Net Linear</option>
