@@ -3,12 +3,17 @@
 __pycache__/
 *.py[cod]
 
-./model_day1.pkl
-./model_day2.pkl
-./features.pkl
-./day1_xg_model.pkl
-./day2_xg_model.pkl
+# ./model_day1.pkl
+# ./model_day2.pkl
+# ./features.pkl
+# ./day1_xg_model.pkl
+# ./day2_xg_model.pkl
 
 # Ignore all pickle files
 *.pk
 *.pkl
+
+
+node_modules
+
+

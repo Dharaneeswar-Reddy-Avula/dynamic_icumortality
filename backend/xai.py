@@ -2,11 +2,15 @@
 # 🔷 PRODUCTION-LEVEL EXPLAINABLE ICU MORTALITY SYSTEM
 # ============================================================
 
+import os
+from dotenv import load_dotenv
 import shap
 import pandas as pd
 import numpy as np
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
+
+load_dotenv()
 
 # ============================================================
 # 2. NORMAL CLINICAL RANGES
@@ -96,53 +100,8 @@ def generate_explanation(model, explainer, df, features, idx=0):
     
     return explanation, pred
 
-import google.generativeai as genai
-
-def generate_gemini_narrative(explanation_df, pred, features_list, risk_level, api_key):
-    genai.configure(api_key=api_key)
-    
-    ignore_features = base_ignore_features + [f for f in features_list if 'delta' in f]
-    filtered_df = explanation_df[~explanation_df['feature'].isin(ignore_features)]
-    
-    increasing = filtered_df[filtered_df['shap'] > 0.05].head(5)
-    decreasing = filtered_df[filtered_df['shap'] < -0.05].tail(5)
-    
-    context = f"The patient has an overall ICU mortality risk level of {risk_level} (Score: {pred:.3f}).\n"
-    
-    context += "Primary factors INCREASING risk:\n"
-    for _, row in increasing.iterrows():
-        context += f"- {format_with_range(row['feature'], row['value'])}\n"
-        
-    context += "\nPrimary factors REDUCING risk (Protective):\n"
-    for _, row in decreasing[::-1].iterrows():
-        context += f"- {format_with_range(row['feature'], row['value'])}\n"
-        
-    prompt = f"""You are an AI assistant explaining a patient's ICU mortality risk. You must use simple, easy-to-understand English, and keep the explanation extremely short and to the point.
-
-Patient Context:
-{context}
-
-Please structure your response EXACTLY in this Markdown format:
-
-**🔴 High Risk Factors:**
-- **[Factor Name]**: [Patient's Value] (Normal: [Normal Range]). [Simple, 1-line reason why this is a risk].
-
-**🟢 Protective Factors:**
-- **[Factor Name]**: [Patient's Value] (Normal: [Normal Range]). [Simple, 1-line reason why this is good].
-
-**💡 Next Steps:**
-- [1-2 short and simple medical action items to help fix the high risk factors].
-
-CRITICAL RULES:
-1. ONLY talk about the exact factors listed in the Patient Context above. Do not invent anything.
-2. Keep all bullet points very short (1 sentence max per bullet). No long paragraphs.
-3. Use plain, understandable English. Avoid overly dense medical jargon.
-4. If there are no factors for a category, simply write "None".
-"""
-    
-    model = genai.GenerativeModel('gemini-2.5-flash')
-    response = model.generate_content(prompt)
-    return "✨ **Gemini AI Explanation:**\n\n" + response.text
+# Gemini AI explanation is disabled.
+# import google.generativeai as genai
 
 
 # ============================================================
@@ -242,15 +201,8 @@ def generate_clinical_narrative(explanation_df, pred, features_list, risk_level)
 def get_explanation(model, explainer, df, features_list, risk_level, idx=0, gemini_key=None):
     explanation_df, pred = generate_explanation(model, explainer, df, features_list, idx)
     
-    # Generate the standard rule-based SHAP narrative
+    # Generate the standard rule-based SHAP narrative only
     narrative = generate_clinical_narrative(explanation_df, pred, features_list, risk_level)
-    
-    # Append the Gemini AI narrative if a key is provided
-    if gemini_key:
-        try:
-            gemini_narrative = generate_gemini_narrative(explanation_df, pred, features_list, risk_level, gemini_key)
-            narrative = narrative + "\n\n---\n\n" + gemini_narrative
-        except Exception as e:
-            narrative = narrative + f"\n\n---\n\n*(Gemini API Error: {str(e)})*"
 
+    # Gemini AI explanation disabled intentionally
     return narrative
