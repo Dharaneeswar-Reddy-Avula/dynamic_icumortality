@@ -10,8 +10,8 @@ __pycache__/
 # ./day2_xg_model.pkl
 
 # Ignore all pickle files
-*.pk
-*.pkl
+# *.pk
+# *.pkl
 
 
 node_modules
