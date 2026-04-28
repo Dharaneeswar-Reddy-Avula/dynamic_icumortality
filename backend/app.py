@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
+from dotenv import load_dotenv
 import pickle
 import pandas as pd
 import shap
@@ -10,6 +12,8 @@ matplotlib.use('Agg') # Set backend to Agg for non-interactive rendering
 import matplotlib.pyplot as plt
 from fastapi import HTTPException
 from xai import get_explanation
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -72,6 +76,13 @@ def predict(data: dict):
     stay_day = data.get("stay_day", 1)
     model_type = data.get("model_type", "lightgbm").lower()
     gemini_key = data.get("gemini_key", None)
+    if isinstance(gemini_key, str):
+        gemini_key = gemini_key.strip()
+        if gemini_key.lower() == "null":
+            gemini_key = None
+
+    if not gemini_key:
+        gemini_key = os.getenv("GEMINI_API_KEY")
 
     if model_type == "eicu_to_mimic_lightgbm":
         with open("features_eicu_to_mimic.pkl", "rb") as f:
